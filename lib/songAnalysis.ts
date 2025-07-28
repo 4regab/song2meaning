@@ -9,25 +9,34 @@ import {
   parseAnalysisResponse, 
   type AnalysisResult 
 } from './gemini';
+import { 
+  withRetry, 
+  circuitBreaker, 
+  classifyError, 
+  generateFallbackResponse,
+  withTimeout 
+} from './errorHandling';
+import { 
+  analysisCache, 
+  requestDeduplicator, 
+  performanceMonitor,
+  optimizePrompt 
+} from './performance';
 
 export interface SongAnalysisRequest {
   artist: string;
   songTitle: string;
-  fullQuery?: string;
+  fullQuery?: string | undefined;
 }
 
 export interface SongAnalysisResponse {
   success: boolean;
-  data?: AnalysisResult;
-  error?: string;
+  data?: AnalysisResult | undefined;
+  error?: string | undefined;
+  fallback?: boolean | undefined;
 }
 
-/**
- * Cache for storing analysis results to avoid duplicate API calls
- */
-const analysisCache = new Map<string, AnalysisResult>();
-const CACHE_TTL = 1000 * 60 * 30; // 30 minutes
-const cacheTimestamps = new Map<string, number>();
+// Cache is now handled by the performance module
 
 /**
  * Generate cache key for a song analysis request
@@ -36,87 +45,111 @@ function getCacheKey(artist: string, songTitle: string): string {
   return `${artist.toLowerCase().trim()}-${songTitle.toLowerCase().trim()}`;
 }
 
-/**
- * Check if cached result is still valid
- */
-function isCacheValid(key: string): boolean {
-  const timestamp = cacheTimestamps.get(key);
-  if (!timestamp) return false;
-  
-  return Date.now() - timestamp < CACHE_TTL;
-}
+// Cache validation is now handled by the performance module
+
+import { performSecurityCheck, APIKeyManager } from './security';
 
 /**
- * Validate and sanitize song analysis request
+ * Validate and sanitize song analysis request with comprehensive security
  */
-function validateRequest(request: SongAnalysisRequest): { isValid: boolean; error?: string } {
+function validateRequest(request: SongAnalysisRequest): { 
+  isValid: boolean; 
+  error?: string | undefined; 
+  sanitizedRequest?: SongAnalysisRequest | undefined;
+} {
   const { artist, songTitle } = request;
   
   if (!artist || !songTitle) {
     return { isValid: false, error: 'Both artist and song title are required' };
   }
-  
-  if (artist.trim().length === 0 || songTitle.trim().length === 0) {
-    return { isValid: false, error: 'Artist and song title cannot be empty' };
+
+  // Check API key configuration
+  const apiKeyCheck = APIKeyManager.checkConfiguration();
+  if (!apiKeyCheck.isValid) {
+    return { isValid: false, error: 'Service configuration error' };
   }
-  
-  if (artist.length > 100 || songTitle.length > 100) {
-    return { isValid: false, error: 'Artist and song title must be less than 100 characters' };
+
+  // Security check for artist
+  const artistCheck = performSecurityCheck(artist);
+  if (!artistCheck.allowed) {
+    return { isValid: false, error: artistCheck.errors.join('; ') };
   }
-  
-  // Basic sanitization check for malicious content
-  const maliciousPatterns = [/<script/i, /javascript:/i, /on\w+=/i];
-  const combinedText = `${artist} ${songTitle}`;
-  
-  for (const pattern of maliciousPatterns) {
-    if (pattern.test(combinedText)) {
-      return { isValid: false, error: 'Invalid characters in search query' };
+
+  // Security check for song title
+  const songCheck = performSecurityCheck(songTitle);
+  if (!songCheck.allowed) {
+    return { isValid: false, error: songCheck.errors.join('; ') };
+  }
+
+  return { 
+    isValid: true, 
+    sanitizedRequest: {
+      artist: artistCheck.sanitized,
+      songTitle: songCheck.sanitized,
+      fullQuery: request.fullQuery
     }
-  }
-  
-  return { isValid: true };
+  };
 }
 
 /**
  * Analyze a song's meaning using Gemini AI
  */
 export async function analyzeSong(request: SongAnalysisRequest): Promise<SongAnalysisResponse> {
+  // Validate and sanitize request
+  const validation = validateRequest(request);
+  if (!validation.isValid) {
+    return {
+      success: false,
+      error: validation.error
+    };
+  }
+  
+  const { artist, songTitle } = validation.sanitizedRequest!;
+  
   try {
-    // Validate request
-    const validation = validateRequest(request);
-    if (!validation.isValid) {
-      return {
-        success: false,
-        error: validation.error
-      };
-    }
-    
-    const { artist, songTitle } = request;
     const cacheKey = getCacheKey(artist, songTitle);
+    const startTime = Date.now();
     
     // Check cache first
-    if (analysisCache.has(cacheKey) && isCacheValid(cacheKey)) {
+    const cachedResult = analysisCache.get(cacheKey);
+    if (cachedResult) {
+      performanceMonitor.recordRequest(Date.now() - startTime, false);
       return {
         success: true,
-        data: analysisCache.get(cacheKey)!
+        data: cachedResult as AnalysisResult
       };
     }
     
-    // Get Gemini client
-    const client = getGeminiClient();
+    // Use request deduplication to prevent duplicate API calls
+    const analysisResult = await requestDeduplicator.deduplicate(cacheKey, async () => {
+      return await circuitBreaker.execute(async () => {
+        return await withRetry(async () => {
+          // Get Gemini client
+          const client = getGeminiClient();
+          
+          // Create and optimize analysis prompt
+          const basePrompt = createSongAnalysisPrompt(artist, songTitle);
+          const prompt = optimizePrompt(basePrompt);
+          
+          // Generate analysis with grounding search and timeout
+          const searchQuery = `${artist} ${songTitle} song meaning lyrics analysis`;
+          const response = await withTimeout(
+            client.generateWithGrounding(prompt, searchQuery),
+            30000, // 30 second timeout
+            'AI analysis request timed out'
+          );
+          
+          // Parse response
+          return parseAnalysisResponse(response, artist, songTitle);
+        }, 3, 1000); // 3 retries with 1 second base delay
+      });
+    });
     
-    // Create analysis prompt
-    const prompt = createSongAnalysisPrompt(artist, songTitle);
-    
-    // Generate analysis
-    const response = await client.generateContent(prompt);
-    
-    // Parse response
-    const analysisResult = parseAnalysisResponse(response, artist, songTitle);
-    
-    // Cache result
+    // Cache successful result
     analysisCache.set(cacheKey, analysisResult);
-    cacheTimestamps.set(cacheKey, Date.now());
+    
+    // Record performance metrics
+    performanceMonitor.recordRequest(Date.now() - startTime, false);
     
     return {
       success: true,
@@ -126,24 +159,21 @@ export async function analyzeSong(request: SongAnalysisRequest): Promise<SongAna
   } catch (error) {
     console.error('Song analysis error:', error);
     
-    // Return user-friendly error messages
-    let errorMessage = 'Unable to analyze song at this time. Please try again.';
+    const apiError = classifyError(error);
     
-    if (error instanceof Error) {
-      if (error.message.includes('timeout')) {
-        errorMessage = 'Request timed out. Please try again.';
-      } else if (error.message.includes('rate limit') || error.message.includes('429')) {
-        errorMessage = 'Too many requests. Please wait a moment and try again.';
-      } else if (error.message.includes('API key')) {
-        errorMessage = 'Service configuration error. Please contact support.';
-      } else if (error.message.includes('network') || error.message.includes('fetch')) {
-        errorMessage = 'Network error. Please check your connection and try again.';
-      }
+    // For certain errors, provide fallback response
+    if (apiError.code === 'TIMEOUT_ERROR' || apiError.code === 'SERVER_ERROR') {
+      const fallbackResponse = generateFallbackResponse(artist, songTitle);
+      return {
+        success: true,
+        data: fallbackResponse.data,
+        fallback: true
+      };
     }
     
     return {
       success: false,
-      error: errorMessage
+      error: apiError.message
     };
   }
 }
@@ -160,7 +190,7 @@ export function parseSearchQuery(query: string): SongAnalysisRequest {
   for (const separator of separators) {
     if (trimmedQuery.includes(separator)) {
       const parts = trimmedQuery.split(separator);
-      if (parts.length >= 2) {
+      if (parts.length >= 2 && parts[0] && parts[1]) {
         return {
           artist: parts[0].trim(),
           songTitle: parts[1].trim(),
@@ -175,8 +205,8 @@ export function parseSearchQuery(query: string): SongAnalysisRequest {
   if (words.length >= 3) {
     // Assume first word is artist, rest is song title
     return {
-      artist: words[0],
-      songTitle: words.slice(1).join(' '),
+      artist: words[0] || 'Unknown Artist',
+      songTitle: words.slice(1).join(' ') || 'Unknown Song',
       fullQuery: trimmedQuery
     };
   }
@@ -194,15 +224,18 @@ export function parseSearchQuery(query: string): SongAnalysisRequest {
  */
 export function clearAnalysisCache(): void {
   analysisCache.clear();
-  cacheTimestamps.clear();
 }
 
 /**
- * Get cache statistics for monitoring
+ * Get comprehensive performance and cache statistics
  */
-export function getCacheStats(): { size: number; keys: string[] } {
+export function getAnalysisStats() {
   return {
-    size: analysisCache.size,
-    keys: Array.from(analysisCache.keys())
+    cache: analysisCache.getStats(),
+    performance: performanceMonitor.getMetrics(),
+    deduplication: {
+      pendingCount: requestDeduplicator.getPendingCount(),
+      pendingKeys: requestDeduplicator.getPendingKeys()
+    }
   };
 }

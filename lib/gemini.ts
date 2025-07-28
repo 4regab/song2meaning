@@ -31,7 +31,6 @@ export interface AnalysisResult {
 
 class GeminiClient {
   private config: GeminiConfig;
-  private retryCount = 0;
 
   constructor(config: GeminiConfig) {
     this.config = {
@@ -112,21 +111,59 @@ class GeminiClient {
       }
     };
 
-    const response = await this.makeRequest('/models/gemini-pro:generateContent', body);
+    const response = await this.makeRequest('/models/gemini-2.5-flash:generateContent', body);
     
     if (!response.candidates || response.candidates.length === 0) {
       throw new Error('No response generated from Gemini AI');
     }
 
-    return response.candidates[0].content.parts[0].text;
+    const candidate = response.candidates[0];
+    if (!candidate?.content?.parts?.[0]?.text) {
+      throw new Error('Invalid response format from Gemini AI');
+    }
+
+    return candidate.content.parts[0].text;
   }
 
   /**
    * Generate content with grounding search for enhanced context
    */
-  async generateWithGrounding(prompt: string, searchQuery?: string): Promise<string> {
-    // For now, use standard generation - grounding will be added in next task
-    return this.generateContent(prompt);
+  async generateWithGrounding(prompt: string, _searchQuery?: string): Promise<string> {
+    const body = {
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }],
+      tools: [{
+        google_search: {}
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 2048,
+      }
+    };
+
+    try {
+      const response = await this.makeRequest('/models/gemini-2.5-flash:generateContent', body);
+      
+      if (!response.candidates || response.candidates.length === 0) {
+        throw new Error('No response generated from Gemini AI with grounding');
+      }
+
+      const candidate = response.candidates[0];
+      if (!candidate?.content?.parts?.[0]?.text) {
+        throw new Error('Invalid response format from Gemini AI with grounding');
+      }
+
+      return candidate.content.parts[0].text;
+    } catch (error) {
+      // Fallback to standard generation if grounding fails
+      console.warn('Grounding search failed, using standard generation:', error);
+      return this.generateContent(prompt);
+    }
   }
 }
 
@@ -138,9 +175,9 @@ let geminiClient: GeminiClient | null = null;
  */
 export function getGeminiClient(): GeminiClient {
   if (!geminiClient) {
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error('NEXT_PUBLIC_GEMINI_API_KEY environment variable is required');
+      throw new Error('GEMINI_API_KEY environment variable is required');
     }
     
     geminiClient = new GeminiClient({ apiKey });

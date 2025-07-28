@@ -1,26 +1,377 @@
 @import "tailwindcss";
 
+/* Neobrutalism Design System with Gradients */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --neo-black: #000000;
+  --neo-white: #ffffff;
+  --neo-blue: #2563eb;
+  --neo-green: #16a34a;
+  --neo-red: #dc2626;
+  --neo-yellow: #eab308;
+  --neo-purple: #9333ea;
+  --neo-orange: #ea580c;
+  --neo-gray-50: #f9fafb;
+  --neo-gray-100: #f3f4f6;
+  --neo-gray-600: #4b5563;
+  --neo-gray-800: #1f2937;
+  
+  /* Gradient colors */
+  --gradient-purple: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-sunset: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-ocean: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gradient-forest: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Global styles */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-attachment: fixed;
+  color: var(--neo-black);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  min-height: 100vh;
+  font-weight: 500;
+}
+
+/* Neobrutalism Shadow Utilities */
+.neo-shadow-sm {
+  box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+}
+
+.neo-shadow {
+  box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 1);
+}
+
+.neo-shadow-md {
+  box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+}
+
+.neo-shadow-lg {
+  box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+}
+
+.neo-shadow-xl {
+  box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+}
+
+/* Neobrutalism Button Styles */
+.neo-btn {
+  border: 2px solid var(--neo-black);
+  font-weight: 700;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  user-select: none;
+}
+
+.neo-btn:hover {
+  transform: translate(-1px, -1px);
+}
+
+.neo-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 1) !important;
+}
+
+.neo-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.neo-btn:disabled:hover {
+  transform: none;
+}
+
+.neo-btn:disabled:active {
+  transform: none;
+  box-shadow: 3px 3px 0px 0px rgba(0, 0, 0, 1) !important;
+}
+
+/* Neobrutalism Card Styles */
+.neo-card {
+  border: 2px solid var(--neo-black);
+  background: var(--neo-white);
+  transition: all 0.15s ease;
+}
+
+.neo-card:hover {
+  transform: translate(-1px, -1px);
+}
+
+/* Neobrutalism Input Styles */
+.neo-input {
+  border: 2px solid var(--neo-black);
+  background: var(--neo-white);
+  color: var(--neo-black);
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.neo-input:focus {
+  outline: none;
+  transform: translate(-1px, -1px);
+}
+
+.neo-input::placeholder {
+  color: var(--neo-gray-600);
+  font-weight: 400;
+}
+
+/* Animation utilities */
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.bounce-in {
+  animation: bounceIn 0.6s ease-out;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.animated-gradient {
+  background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Loading spinner */
+.neo-spinner {
+  border: 2px solid var(--neo-gray-100);
+  border-top: 2px solid var(--neo-black);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Typography */
+.neo-heading {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.neo-text {
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .neo-shadow-lg {
+    box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  }
+  
+  .neo-shadow-xl {
+    box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+  }
+  
+  .neo-btn:hover {
+    transform: none;
+  }
+  
+  .neo-card:hover {
+    transform: none;
+  }
+  
+  .neo-input:focus {
+    transform: none;
+  }
+}
+
+/* Glassmorphism component classes */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur-md);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px var(--glass-shadow);
+}
+
+.glass-card-sm {
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur-sm);
+  border: 1px solid var(--glass-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 16px var(--glass-shadow);
+}
+
+.glass-card-lg {
+  background: var(--glass-bg);
+  backdrop-filter: var(--backdrop-blur-lg);
+  border: 1px solid var(--glass-border);
+  border-radius: 1.5rem;
+  box-shadow: 0 12px 48px var(--glass-shadow);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: var(--backdrop-blur-sm);
+  border: 1px solid var(--glass-border);
+  border-radius: 0.75rem;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  outline: none;
+}
+
+.glass-button {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  backdrop-filter: var(--backdrop-blur-sm);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.75rem;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.glass-button:hover {
+  background: linear-gradient(135deg, #5855eb, #7c3aed);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+}
+
+.glass-button:active {
+  transform: translateY(0);
+}
+
+.glass-button:disabled {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Animation utilities */
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading animation */
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .glass-card {
+    border-radius: 0.75rem;
+    margin: 0.5rem;
+  }
+  
+  .glass-card-lg {
+    border-radius: 1rem;
+  }
 }
