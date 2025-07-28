@@ -34,7 +34,7 @@ Visit the live application: [song2meaning.vercel.app](https://song2meaning.verce
 - **Deployment**: Vercel
 - **Security**: Server-side API routes, rate limiting, input validation
 
-## � Prerequisites
+## 📌 Prerequisites
 
 - Node.js 18+
 - Gemini AI API key ([Get one here](https://makersuite.google.com/app/apikey))
