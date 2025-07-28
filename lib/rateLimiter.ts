@@ -26,7 +26,7 @@ class IPRateLimiter {
 
   constructor(config: RateLimitConfig = {
     maxRequests: 5,
-    windowMs: 60 * 60 * 1000, // 1 hour
+    windowMs: 24 * 60 * 60 * 1000, // 1 day
     skipSuccessfulRequests: false
   }) {
     this.config = config;
