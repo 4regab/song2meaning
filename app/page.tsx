@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import SpotifyPlayer from '../components/SpotifyPlayer';
+
 import { searchSpotifyTrack, parseSpotifyQuery, type SpotifyTrack } from '../lib/spotify';
 import { analyzeSong, getRateLimitStatus } from '../lib/client-api';
+import { copyToClipboard } from '../lib/shareUtils';
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,6 +16,8 @@ export default function Home() {
   const [currentExampleIndex, setCurrentExampleIndex] = useState(0);
   const [spotifyTrack, setSpotifyTrack] = useState<SpotifyTrack | null>(null);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false);
 
   // Example songs array
   const exampleSongs = [
@@ -135,6 +139,44 @@ export default function Home() {
     setSongQuery(exampleSongs[nextIndex] || '');
     if (validationError) {
       setValidationError('');
+    }
+  };
+
+
+
+  const handleShareClick = async () => {
+    if (!result?.success || !result.data?.shareUrl) {
+      return;
+    }
+
+    setShareLoading(true);
+    setShareSuccess(false);
+
+    try {
+      await copyToClipboard(result.data.shareUrl);
+      setShareSuccess(true);
+      
+      // Reset success state after 3 seconds
+      setTimeout(() => {
+        setShareSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to copy share link:', error);
+      // Fallback: try to select the URL for manual copying
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = result.data.shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setShareSuccess(true);
+        setTimeout(() => setShareSuccess(false), 3000);
+      } catch (fallbackError) {
+        console.error('Fallback copy also failed:', fallbackError);
+      }
+    } finally {
+      setShareLoading(false);
     }
   };
 
@@ -319,6 +361,8 @@ export default function Home() {
           </div>
         </div>
 
+
+
         {/* Results Section */}
         {result && (
           <div className="mt-2">
@@ -328,14 +372,49 @@ export default function Home() {
               }`}>
               {result.success ? (
                 <div>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xl">✓</span>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xl">✓</span>
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-black text-black">Analysis Complete</h3>
+                        <p className="text-gray-600">Here's what we discovered about your song</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-2xl font-black text-black">Analysis Complete</h3>
-                      <p className="text-gray-600">Here's what we discovered about your song</p>
-                    </div>
+
+                    {/* Share Button */}
+                    {result.data?.shareUrl && (
+                      <button
+                        onClick={handleShareClick}
+                        disabled={shareLoading}
+                        className={`flex items-center gap-2 font-bold px-4 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] transition-all duration-150 ${
+                          shareSuccess
+                            ? 'bg-green-500 text-white'
+                            : 'bg-blue-500 hover:bg-blue-600 text-white'
+                        }`}
+                        title={shareSuccess ? 'Link copied to clipboard!' : 'Copy share link to clipboard'}
+                      >
+                        {shareLoading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>Copying...</span>
+                          </>
+                        ) : shareSuccess ? (
+                          <>
+                            <span>✓</span>
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                            </svg>
+                            <span>Share</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
 
                   {result.data && (

@@ -1,12 +1,16 @@
 /**
- * Secure Song Analysis API Route with Rate Limiting
+ * Secure Song Analysis API Route with Rate Limiting and Caching
  * Handles song analysis requests on the server-side to keep API key secure
  * Limits each IP to 5 analyses per day
+ * Integrates Supabase caching to reduce API calls and enable sharing
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { api } from '../../../lib/api';
 import { songAnalysisRateLimit, getClientIP } from '../../../lib/rateLimiter';
+import { getCachedAnalysis, storeAnalysis, type EnhancedAnalysisResult } from '../../../lib/database';
+import { parseSearchQuery } from '../../../lib/songAnalysis';
+import { buildShareUrl } from '../../../lib/shareUtils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -77,20 +81,124 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Perform song analysis using the secure backend
+    // Parse the query to extract artist and song title
     console.log('🎵 Analyzing song:', query, 'for IP:', clientIP);
-    const result = await api.analyzeSong(query);
+    const parsedQuery = parseSearchQuery(query);
+    
+    let analysisResult: EnhancedAnalysisResult;
+    let fromCache = false;
 
-    // Record the request (rate limit counter was already incremented)
-    songAnalysisRateLimit.record(request, result.success);
+    try {
+      // First, check if we have a cached result
+      console.log('🔍 Checking cache for:', parsedQuery.artist, '-', parsedQuery.songTitle);
+      const cacheResult = await getCachedAnalysis(parsedQuery.artist, parsedQuery.songTitle);
+      
+      if (cacheResult.success && cacheResult.data) {
+        // Cache hit - return cached result
+        console.log('✅ Cache hit for:', parsedQuery.artist, '-', parsedQuery.songTitle);
+        analysisResult = cacheResult.data;
+        fromCache = true;
+      } else {
+        // Cache miss - perform fresh analysis
+        console.log('❌ Cache miss, performing fresh analysis for:', parsedQuery.artist, '-', parsedQuery.songTitle);
+        
+        if (!cacheResult.success) {
+          console.warn('⚠️ Database cache check failed:', cacheResult.error, '- proceeding with fresh analysis');
+        }
+        
+        const freshResult = await api.analyzeSong(query);
+        
+        if (!freshResult.success) {
+          // Record the failed request
+          songAnalysisRateLimit.record(request, false);
+          
+          // Get updated rate limit status
+          const updatedStatus = songAnalysisRateLimit.getStatus(request);
+          
+          return NextResponse.json({
+            success: false,
+            error: freshResult.error,
+            rateLimitInfo: {
+              remaining: updatedStatus.remaining,
+              resetTime: updatedStatus.resetTime,
+              used: updatedStatus.count
+            }
+          }, { status: 500 });
+        }
+        
+        // Store the fresh result in database
+        try {
+          console.log('💾 Storing analysis result in database');
+          const storeResult = await storeAnalysis(freshResult.data!);
+          
+          if (storeResult.success && storeResult.data) {
+            analysisResult = storeResult.data;
+            console.log('✅ Analysis stored with share ID:', analysisResult.shareId);
+          } else {
+            console.warn('⚠️ Failed to store analysis in database:', storeResult.error);
+            // Create enhanced result manually if storage failed
+            analysisResult = {
+              ...freshResult.data!,
+              fromCache: false
+            };
+          }
+        } catch (storeError) {
+          console.error('❌ Error storing analysis:', storeError);
+          // Continue with basic result if storage fails
+          analysisResult = {
+            ...freshResult.data!,
+            fromCache: false
+          };
+        }
+        
+        fromCache = false;
+      }
+    } catch (error) {
+      console.error('❌ Database operation failed:', error);
+      
+      // Fallback to fresh analysis if database is completely unavailable
+      console.log('🔄 Falling back to fresh analysis due to database error');
+      const freshResult = await api.analyzeSong(query);
+      
+      if (!freshResult.success) {
+        // Record the failed request
+        songAnalysisRateLimit.record(request, false);
+        
+        // Get updated rate limit status
+        const updatedStatus = songAnalysisRateLimit.getStatus(request);
+        
+        return NextResponse.json({
+          success: false,
+          error: freshResult.error,
+          rateLimitInfo: {
+            remaining: updatedStatus.remaining,
+            resetTime: updatedStatus.resetTime,
+            used: updatedStatus.count
+          }
+        }, { status: 500 });
+      }
+      
+      analysisResult = {
+        ...freshResult.data!,
+        fromCache: false
+      };
+      fromCache = false;
+    }
+
+    // Record the successful request (rate limit counter was already incremented)
+    songAnalysisRateLimit.record(request, true);
 
     // Get updated rate limit status
     const updatedStatus = songAnalysisRateLimit.getStatus(request);
 
-    // Return the result with rate limit info
+    // Return the result with cache status and share information
     return NextResponse.json({
       success: true,
-      result,
+      result: analysisResult,
+      cache: {
+        hit: fromCache,
+        source: fromCache ? 'database' : 'fresh'
+      },
       rateLimitInfo: {
         remaining: updatedStatus.remaining,
         resetTime: updatedStatus.resetTime,
@@ -100,7 +208,8 @@ export async function POST(request: NextRequest) {
       headers: {
         'X-RateLimit-Limit': '5',
         'X-RateLimit-Remaining': updatedStatus.remaining.toString(),
-        'X-RateLimit-Reset': updatedStatus.resetTime.toString()
+        'X-RateLimit-Reset': updatedStatus.resetTime.toString(),
+        'X-Cache-Status': fromCache ? 'HIT' : 'MISS'
       }
     });
 
@@ -167,19 +276,123 @@ export async function GET(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Perform song analysis
+    // Parse the query to extract artist and song title
     console.log('🎵 Analyzing song (GET):', query, 'for IP:', clientIP);
-    const result = await api.analyzeSong(query);
+    const parsedQuery = parseSearchQuery(query);
+    
+    let analysisResult: EnhancedAnalysisResult;
+    let fromCache = false;
 
-    // Record the request
-    songAnalysisRateLimit.record(request, result.success);
+    try {
+      // First, check if we have a cached result
+      console.log('🔍 Checking cache for (GET):', parsedQuery.artist, '-', parsedQuery.songTitle);
+      const cacheResult = await getCachedAnalysis(parsedQuery.artist, parsedQuery.songTitle);
+      
+      if (cacheResult.success && cacheResult.data) {
+        // Cache hit - return cached result
+        console.log('✅ Cache hit for (GET):', parsedQuery.artist, '-', parsedQuery.songTitle);
+        analysisResult = cacheResult.data;
+        fromCache = true;
+      } else {
+        // Cache miss - perform fresh analysis
+        console.log('❌ Cache miss, performing fresh analysis for (GET):', parsedQuery.artist, '-', parsedQuery.songTitle);
+        
+        if (!cacheResult.success) {
+          console.warn('⚠️ Database cache check failed (GET):', cacheResult.error, '- proceeding with fresh analysis');
+        }
+        
+        const freshResult = await api.analyzeSong(query);
+        
+        if (!freshResult.success) {
+          // Record the failed request
+          songAnalysisRateLimit.record(request, false);
+          
+          // Get updated rate limit status
+          const updatedStatus = songAnalysisRateLimit.getStatus(request);
+          
+          return NextResponse.json({
+            success: false,
+            error: freshResult.error,
+            rateLimitInfo: {
+              remaining: updatedStatus.remaining,
+              resetTime: updatedStatus.resetTime,
+              used: updatedStatus.count
+            }
+          }, { status: 500 });
+        }
+        
+        // Store the fresh result in database
+        try {
+          console.log('💾 Storing analysis result in database (GET)');
+          const storeResult = await storeAnalysis(freshResult.data!);
+          
+          if (storeResult.success && storeResult.data) {
+            analysisResult = storeResult.data;
+            console.log('✅ Analysis stored with share ID (GET):', analysisResult.shareId);
+          } else {
+            console.warn('⚠️ Failed to store analysis in database (GET):', storeResult.error);
+            // Create enhanced result manually if storage failed
+            analysisResult = {
+              ...freshResult.data!,
+              fromCache: false
+            };
+          }
+        } catch (storeError) {
+          console.error('❌ Error storing analysis (GET):', storeError);
+          // Continue with basic result if storage fails
+          analysisResult = {
+            ...freshResult.data!,
+            fromCache: false
+          };
+        }
+        
+        fromCache = false;
+      }
+    } catch (error) {
+      console.error('❌ Database operation failed (GET):', error);
+      
+      // Fallback to fresh analysis if database is completely unavailable
+      console.log('🔄 Falling back to fresh analysis due to database error (GET)');
+      const freshResult = await api.analyzeSong(query);
+      
+      if (!freshResult.success) {
+        // Record the failed request
+        songAnalysisRateLimit.record(request, false);
+        
+        // Get updated rate limit status
+        const updatedStatus = songAnalysisRateLimit.getStatus(request);
+        
+        return NextResponse.json({
+          success: false,
+          error: freshResult.error,
+          rateLimitInfo: {
+            remaining: updatedStatus.remaining,
+            resetTime: updatedStatus.resetTime,
+            used: updatedStatus.count
+          }
+        }, { status: 500 });
+      }
+      
+      analysisResult = {
+        ...freshResult.data!,
+        fromCache: false
+      };
+      fromCache = false;
+    }
+
+    // Record the successful request
+    songAnalysisRateLimit.record(request, true);
 
     // Get updated rate limit status
     const updatedStatus = songAnalysisRateLimit.getStatus(request);
 
     return NextResponse.json({
       success: true,
-      result,
+      result: analysisResult,
+      cache: {
+        hit: fromCache,
+        source: fromCache ? 'database' : 'fresh'
+      },
       rateLimitInfo: {
         remaining: updatedStatus.remaining,
         resetTime: updatedStatus.resetTime,
@@ -189,7 +402,8 @@ export async function GET(request: NextRequest) {
       headers: {
         'X-RateLimit-Limit': '5',
         'X-RateLimit-Remaining': updatedStatus.remaining.toString(),
-        'X-RateLimit-Reset': updatedStatus.resetTime.toString()
+        'X-RateLimit-Reset': updatedStatus.resetTime.toString(),
+        'X-Cache-Status': fromCache ? 'HIT' : 'MISS'
       }
     });
 

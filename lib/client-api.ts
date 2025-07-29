@@ -16,6 +16,11 @@ export interface SongAnalysisResult {
     themes: string[];
     deepDive: string;
     culturalContext: string;
+    shareId?: string;
+    shareUrl?: string;
+    createdAt?: string;
+    accessCount?: number;
+    fromCache?: boolean;
 }
 
 export interface RateLimitInfo {
@@ -32,6 +37,8 @@ export interface SongAnalysisResponse {
     fallback?: boolean;
     rateLimitInfo?: RateLimitInfo;
 }
+
+
 
 /**
  * Client-side API for calling secure server routes
@@ -67,9 +74,10 @@ export class ClientAPI {
                 };
             }
 
-            if (data.success) {
+            if (data.success && data.result) {
                 return {
-                    ...data.result,
+                    success: true,
+                    data: data.result,
                     rateLimitInfo: data.rateLimitInfo
                 };
             } else {
@@ -206,6 +214,8 @@ export class ClientAPI {
             };
         }
     }
+
+
 }
 
 // Global client instance

@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     if (!artist || !track) {
       return NextResponse.json(
-        { error: 'Artist and track parameters are required' },
+        { success: false, error: 'Artist and track parameters are required' },
         { status: 400 }
       );
     }
@@ -110,12 +110,15 @@ export async function GET(request: NextRequest) {
     console.log('Preview URL:', spotifyTrack?.preview_url);
     console.log('Has preview:', !!spotifyTrack?.preview_url);
 
-    return NextResponse.json({ track: spotifyTrack });
+    return NextResponse.json({ 
+      success: true, 
+      track: spotifyTrack 
+    });
 
   } catch (error) {
     console.error('Spotify search error:', error);
     return NextResponse.json(
-      { error: 'Failed to search Spotify' },
+      { success: false, error: 'Failed to search Spotify' },
       { status: 500 }
     );
   }
