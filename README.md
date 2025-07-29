@@ -19,7 +19,7 @@ A simple web application that uses Gemini AI with grounding search to analyze so
   - Direct links to full tracks on Spotify
   - Fallback support when previews aren't available
 - **🎨 Neobrutalism Design**: Bold, modern interface inspired by contemporary design trends
-- **� SSecure API**: Server-side API routes keep your API keys safe from client exposure
+- **⚙️ Secure API**: Server-side API routes keep your API keys safe from client exposure
 - **⚡ Rate Limited**: 5 analyses per IP per hour to prevent abuse
 - **📱 Responsive**: Works perfectly on desktop and mobile devices
 - **🚀 Fast**: Optimized with caching and performance monitoring
