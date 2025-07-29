@@ -60,7 +60,7 @@ class IPRateLimiter {
         allowed: false,
         remaining: 0,
         resetTime: requestData.resetTime,
-        error: `Rate limit exceeded. You can make ${this.config.maxRequests} requests per hour. Try again in ${Math.ceil((requestData.resetTime - now) / 1000 / 60)} minutes.`
+        error: `Rate limit exceeded. You can make ${this.config.maxRequests} requests per day. Try again in ${Math.ceil((requestData.resetTime - now) / 1000 / 60 / 60)} hours.`
       };
     }
     
@@ -258,7 +258,7 @@ export function createRateLimitMiddleware(config?: Partial<RateLimitConfig>) {
 // Global rate limiter instance for song analysis
 export const songAnalysisRateLimit = createRateLimitMiddleware({
   maxRequests: 5,
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 24 * 60 * 60 * 1000, // 1 day
   skipSuccessfulRequests: false
 });
 

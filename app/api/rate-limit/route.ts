@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
         used: status.count,
         remaining: status.remaining,
         resetTime: status.resetTime,
-        resetIn: Math.ceil((status.resetTime - Date.now()) / 1000 / 60), // minutes
-        windowMs: 60 * 60 * 1000 // 1 hour
+        resetIn: Math.ceil((status.resetTime - Date.now()) / 1000 / 60 / 60), // hours
+        windowMs: 24 * 60 * 60 * 1000 // 1 day
       },
       globalStats: {
         totalActiveIPs: stats.activeIPs,

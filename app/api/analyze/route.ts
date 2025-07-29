@@ -1,7 +1,7 @@
 /**
  * Secure Song Analysis API Route with Rate Limiting
  * Handles song analysis requests on the server-side to keep API key secure
- * Limits each IP to 5 analyses per hour
+ * Limits each IP to 5 analyses per day
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
         rateLimitInfo: {
           remaining: rateLimitResult.remaining,
           resetTime: rateLimitResult.resetTime,
-          resetIn: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000 / 60) // minutes
+          resetIn: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000 / 60 / 60) // hours
         }
       }, {
         status: 429,
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
         rateLimitInfo: {
           remaining: rateLimitResult.remaining,
           resetTime: rateLimitResult.resetTime,
-          resetIn: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000 / 60)
+          resetIn: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000 / 60 / 60) // hours
         }
       }, {
         status: 429,

@@ -20,7 +20,7 @@ A simple web application that uses Gemini AI with grounding search to analyze so
   - Fallback support when previews aren't available
 - **🎨 Neobrutalism Design**: Bold, modern interface inspired by contemporary design trends
 - **⚙️ Secure API**: Server-side API routes keep your API keys safe from client exposure
-- **⚡ Rate Limited**: 5 analyses per IP per hour to prevent abuse
+- **⚡ Rate Limited**: 5 analyses per IP per day to prevent abuse
 - **📱 Responsive**: Works perfectly on desktop and mobile devices
 - **🚀 Fast**: Optimized with caching and performance monitoring
 - **🛡️ Secure**: Input validation, sanitization, and security monitoring
@@ -220,7 +220,7 @@ For production deployment, update your app settings:
 ## 🛡️ Security Features
 
 - **Server-side API**: API key never exposed to client
-- **Rate Limiting**: 5 requests per IP per hour
+- **Rate Limiting**: 5 requests per IP per day
 - **Input Validation**: Strict format validation and sanitization
 - **Error Handling**: Comprehensive error management with fallbacks
 - **Security Monitoring**: Request logging and anomaly detection

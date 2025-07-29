@@ -21,7 +21,7 @@ export interface SongAnalysisResult {
 export interface RateLimitInfo {
     remaining: number;
     resetTime: number;
-    resetIn?: number; // minutes until reset
+    resetIn?: number; // hours until reset
     used?: number;
 }
 
