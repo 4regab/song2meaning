@@ -1,8 +1,6 @@
 # 🎵 Song2Meaning
 
-**Discover the deeper meaning behind music with AI-powered song analysis.**
-
-A simple web application that uses Gemini AI with grounding search to analyze songs and reveal their themes, cultural context, and hidden meanings. Features Spotify integration for music previews while you explore the deeper meanings behind your favorite tracks.
+*A simple web application that uses Gemini AI with grounding search to analyze songs and reveal their themes, cultural context, and hidden meanings. Features Spotify integration for music previews while you explore the deeper meanings behind your favorite tracks.*
 
 ![Song2Meaning](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
