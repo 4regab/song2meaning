@@ -44,7 +44,7 @@ Visit the live application: [song2meaning.vercel.app](https://song2meaning.verce
 - Gemini AI API key ([Get one here](https://makersuite.google.com/app/apikey))
 - Spotify Developer Account ([Create one here](https://developer.spotify.com/dashboard))
 
-## �️ API Setup
+## 🔧 API Setup
 
 ### Gemini AI API Key
 
