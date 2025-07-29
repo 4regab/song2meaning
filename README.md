@@ -13,6 +13,8 @@ A simple web application that uses Gemini AI with grounding search to analyze so
 ## ✨ Features
 
 - **🤖 AI-Powered Analysis**: Uses Gemini AI with grounding search for accurate, contextual song analysis
+- **🔗 Share Analysis**: Generate shareable links for song analyses with SEO-optimized pages
+- **💾 Smart Caching**: Database-backed analysis caching to reduce LLM calls and improve performance
 - **🎵 Spotify Integration**:
   - Automatic track search and matching
   - 30-second music previews while reading analysis
@@ -20,7 +22,7 @@ A simple web application that uses Gemini AI with grounding search to analyze so
   - Fallback support when previews aren't available
 - **🎨 Neobrutalism Design**: Bold, modern interface inspired by contemporary design trends
 - **⚙️ Secure API**: Server-side API routes keep your API keys safe from client exposure
-- **⚡ Rate Limited**: 5 analyses per IP per day to prevent abuse
+- **⚡ Rate Limited**: 5 analysis per IP per day to prevent abuse
 - **📱 Responsive**: Works perfectly on desktop and mobile devices
 - **🚀 Fast**: Optimized with caching and performance monitoring
 - **🛡️ Secure**: Input validation, sanitization, and security monitoring
@@ -34,6 +36,7 @@ Visit the live application: [song2meaning.vercel.app](https://song2meaning.verce
 - **Frontend**: Next.js 15, React 19, TypeScript
 - **Styling**: Tailwind CSS 4 with custom neobrutalism design
 - **AI**: Google Gemini AI with grounding search
+- **Database**: Supabase for analysis caching and sharing
 - **Music**: Spotify Web API integration for track search and previews
 - **Deployment**: Vercel
 - **Security**: Server-side API routes, rate limiting, input validation
@@ -43,6 +46,23 @@ Visit the live application: [song2meaning.vercel.app](https://song2meaning.verce
 - Node.js 18+
 - Gemini AI API key ([Get one here](https://makersuite.google.com/app/apikey))
 - Spotify Developer Account ([Create one here](https://developer.spotify.com/dashboard))
+- Supabase account for database ([Create one here](https://supabase.com))
+
+## 🆕 What's New
+
+### 🔗 Share Analysis Feature
+- **Shareable Links**: Every song analysis now generates a unique shareable URL
+- **SEO Optimized**: Share pages include proper metadata for social media previews
+- **Copy to Clipboard**: One-click sharing with automatic clipboard copying
+- **Persistent Storage**: Shared analyses are stored in Supabase for permanent access
+- **Access Tracking**: Monitor how many times your shared analysis has been viewed
+
+### 💾 Smart Caching System
+- **Database-Backed Caching**: All analyses are stored in Supabase to prevent duplicate LLM calls
+- **Intelligent Matching**: Normalized search keys ensure variations of the same song are matched
+- **Performance Boost**: Cached results load instantly, saving API costs and improving UX
+- **Cache Statistics**: Track cache hits and performance metrics
+- **Automatic Updates**: Access counts and timestamps are automatically maintained
 
 ## 🔧 API Setup
 
@@ -110,7 +130,14 @@ For production deployment, update your app settings:
    npm install
    ```
 
-3. **Set up environment variables**
+3. **Set up Supabase database**
+
+   - Create a new project at [supabase.com](https://supabase.com)
+   - Go to SQL Editor in your Supabase dashboard
+   - Copy and paste the contents of `supabase/schema.sql`
+   - Run the SQL to create the database schema
+
+4. **Set up environment variables**
 
    ```bash
    cp .env.local.example .env.local
@@ -125,15 +152,23 @@ For production deployment, update your app settings:
    # Spotify API Configuration
    SPOTIFY_CLIENT_ID=your_spotify_client_id_here
    SPOTIFY_CLIENT_SECRET=your_spotify_client_secret_here
+
+   # Supabase Configuration
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+   # Base URL for share links (optional, defaults to localhost:3000)
+   NEXT_PUBLIC_BASE_URL=https://yourdomain.com
    ```
 
-4. **Run the development server**
+5. **Run the development server**
 
    ```bash
    npm run dev
    ```
 
-5. **Open your browser**
+6. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 🚀 Deployment
@@ -160,17 +195,23 @@ For production deployment, update your app settings:
    - `GEMINI_API_KEY`: Your Gemini AI API key
    - `SPOTIFY_CLIENT_ID`: Your Spotify Client ID
    - `SPOTIFY_CLIENT_SECRET`: Your Spotify Client Secret
+   - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
+   - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
+   - `NEXT_PUBLIC_BASE_URL`: Your production domain (e.g., https://yourdomain.vercel.app)
 
 ## 🎯 Usage
 
 1. **Enter a song** in the format: `Artist - Song Title`
 2. **Click "Analyze Song"** or press Enter
 3. **Listen to a preview** (if available) while the analysis runs
-4. **View the comprehensive analysis** with four detailed sections:
+4. **View the comprehensive analysis** with detailed sections:
    - 📖 **Overview**: Summary of the song's meaning and key themes
    - 🔍 **Deep Dive**: Detailed lyrical analysis and interpretation
    - 💭 **Cultural Context**: Historical and cultural background
    - 🎵 **Spotify Integration**: Preview the track while reading the analysis
+5. **Share your analysis** using the share button to copy a permanent link
+6. **Enjoy instant results** for previously analyzed songs thanks to smart caching
 
 ## 🔧 Troubleshooting
 
@@ -209,9 +250,10 @@ For production deployment, update your app settings:
 
 ## 🔧 API Endpoints
 
-- `POST /api/analyze` - Analyze a song's meaning and themes
+- `POST /api/analyze` - Analyze a song's meaning and themes (with caching and sharing)
+- `GET /share/[shareId]` - View shared song analysis with SEO metadata
 - `GET /api/health` - System health check
-- `GET /api/stats` - Performance statistics
+- `GET /api/stats` - Performance statistics (includes cache metrics)
 - `GET /api/rate-limit` - Rate limit status
 - `POST /api/validate` - Input validation
 - `GET /api/spotify/search` - Search for Spotify tracks
@@ -227,10 +269,12 @@ For production deployment, update your app settings:
 
 ## 📊 Performance
 
-- **Caching**: Advanced LRU cache with TTL
-- **Request Deduplication**: Prevents duplicate API calls
-- **Performance Monitoring**: Real-time metrics and statistics
+- **Database Caching**: Persistent Supabase caching eliminates duplicate LLM calls
+- **Smart Cache Matching**: Normalized search keys for intelligent song matching
+- **Request Deduplication**: Prevents duplicate API calls in real-time
+- **Performance Monitoring**: Real-time metrics and cache statistics
 - **Optimized Prompts**: Efficient AI interactions
+- **Instant Results**: Cached analyses load immediately, improving user experience
 
 ## 🎨 Design
 
@@ -259,6 +303,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **Google Gemini AI** for powerful language processing
+- **Supabase** for database and backend services
 - **Spotify Web API** for music integration and previews
 - **Vercel** for seamless deployment
 - **Next.js** for the amazing React framework
