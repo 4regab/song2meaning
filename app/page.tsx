@@ -138,6 +138,26 @@ export default function Home() {
     }
   };
 
+  // Format reset time for display
+  const formatResetTime = (hours: number): string => {
+    if (hours >= 24) {
+      const days = Math.floor(hours / 24);
+      const remainingHours = hours % 24;
+      if (remainingHours === 0) {
+        return days === 1 ? '1 day' : `${days} days`;
+      } else {
+        return days === 1 
+          ? `1 day ${remainingHours}h` 
+          : `${days} days ${remainingHours}h`;
+      }
+    } else if (hours >= 1) {
+      return hours === 1 ? '1 hour' : `${hours} hours`;
+    } else {
+      // For less than 1 hour, show "less than 1 hour"
+      return 'less than 1 hour';
+    }
+  };
+
   // Load rate limit status on component mount
   React.useEffect(() => {
     loadRateLimitStatus();
@@ -292,7 +312,7 @@ export default function Home() {
             {rateLimitInfo && rateLimitInfo.remaining === 0 && (
               <div className="mt-4 sm:mt-6 bg-red-100 border-2 border-red-500 rounded-lg p-3 sm:p-4 shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]">
                 <p className="text-red-800 font-bold text-center text-sm sm:text-base">
-                  ⚠️ Rate limit reached! Try again in {rateLimitInfo.resetIn} hours.
+                  ⚠️ Rate limit reached! Try again in {formatResetTime(rateLimitInfo.resetIn)}.
                 </p>
               </div>
             )}
@@ -389,7 +409,7 @@ export default function Home() {
                 <div className="mt-6 bg-purple-100 border-2 border-purple-500 rounded-lg p-4 shadow-[2px_2px_0px_0px_rgba(147,51,234,1)]">
                   <p className="text-purple-800 font-bold text-center">
                     📊 {result.rateLimitInfo.remaining}/5 requests remaining
-                    {result.rateLimitInfo.resetIn && ` • Resets in ${result.rateLimitInfo.resetIn} hours`}
+                    {result.rateLimitInfo.resetIn && ` • Resets in ${formatResetTime(result.rateLimitInfo.resetIn)}`}
                   </p>
                 </div>
               )}
