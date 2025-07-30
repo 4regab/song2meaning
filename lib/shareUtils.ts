@@ -56,7 +56,10 @@ export function buildShareUrl(shareId: string): string {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
                   (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
   
-  return `${baseUrl}/share/${shareId}`;
+  // Remove trailing slash from baseUrl to prevent double slashes
+  const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+  
+  return `${cleanBaseUrl}/share/${shareId}`;
 }
 
 /**
