@@ -10,11 +10,11 @@ interface SpotifySearchResultsProps {
   query: string;
 }
 
-export default function SpotifySearchResults({ 
-  tracks, 
-  isLoading, 
-  onTrackSelect, 
-  query 
+export default function SpotifySearchResults({
+  tracks,
+  isLoading,
+  onTrackSelect,
+  query
 }: SpotifySearchResultsProps) {
   const [playingTrack, setPlayingTrack] = useState<string | null>(null);
   const [audioElements, setAudioElements] = useState<{ [key: string]: HTMLAudioElement }>({});
@@ -36,18 +36,18 @@ export default function SpotifySearchResults({
 
     try {
       let audio = audioElements[track.id];
-      
+
       if (!audio) {
         audio = new Audio(track.preview_url);
         audio.volume = 0.5;
         audio.addEventListener('ended', () => {
           setPlayingTrack(null);
         });
-        
+
         setAudioElements(prev => ({
           ...prev,
           [track.id]: audio
-        }));
+        } as { [key: string]: HTMLAudioElement }));
       }
 
       await audio.play();
@@ -70,10 +70,10 @@ export default function SpotifySearchResults({
   const getAlbumImage = (track: SpotifyTrack): string => {
     const images = track.album.images;
     // Get medium size image (usually 300x300)
-    return images.find(img => img.height === 300)?.url || 
-           images.find(img => img.height && img.height >= 200)?.url ||
-           images[0]?.url || 
-           '/placeholder-album.svg';
+    return images.find(img => img.height === 300)?.url ||
+      images.find(img => img.height && img.height >= 200)?.url ||
+      images[0]?.url ||
+      '/placeholder-album.svg';
   };
 
   if (isLoading) {
@@ -111,14 +111,13 @@ export default function SpotifySearchResults({
         </h3>
         <p className="text-sm text-gray-600">Click on a song to analyze its meaning</p>
       </div>
-      
+
       <div className="max-h-96 overflow-y-auto">
         {tracks.map((track, index) => (
           <div
             key={track.id}
-            className={`p-4 border-b border-gray-200 hover:bg-purple-50 cursor-pointer transition-colors duration-150 ${
-              index === tracks.length - 1 ? 'border-b-0' : ''
-            }`}
+            className={`p-4 border-b border-gray-200 hover:bg-purple-50 cursor-pointer transition-colors duration-150 ${index === tracks.length - 1 ? 'border-b-0' : ''
+              }`}
             onClick={() => onTrackSelect(track)}
           >
             <div className="flex items-center gap-4">
@@ -132,7 +131,7 @@ export default function SpotifySearchResults({
                     (e.target as HTMLImageElement).src = '/placeholder-album.svg';
                   }}
                 />
-                
+
                 {/* Preview Play Button */}
                 {track.preview_url && (
                   <button
@@ -145,11 +144,11 @@ export default function SpotifySearchResults({
                   >
                     {playingTrack === track.id ? (
                       <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                        <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
                       </svg>
                     ) : (
                       <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
+                        <path d="M8 5v14l11-7z" />
                       </svg>
                     )}
                   </button>
@@ -184,7 +183,7 @@ export default function SpotifySearchResults({
                     {track.popularity}% popular
                   </div>
                 </div>
-                
+
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -193,7 +192,7 @@ export default function SpotifySearchResults({
           </div>
         ))}
       </div>
-      
+
       <div className="p-3 bg-gray-50 border-t border-gray-200 rounded-b-xl">
         <p className="text-xs text-gray-500 text-center">
           🎵 Green dot indicates preview available • Click any song to analyze its meaning
