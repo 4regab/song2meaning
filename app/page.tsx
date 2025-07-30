@@ -2,10 +2,12 @@
 
 import React, { useState } from 'react';
 import SpotifyPlayer from '../components/SpotifyPlayer';
+import SpotifySearchInput from '../components/SpotifySearchInput';
 
 import { searchSpotifyTrack, parseSpotifyQuery, type SpotifyTrack } from '../lib/spotify';
 import { analyzeSong, getRateLimitStatus } from '../lib/client-api';
 import { copyToClipboard } from '../lib/shareUtils';
+import { SpotifyTrack as SearchSpotifyTrack } from './api/spotify/search-multiple/route';
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,6 +20,7 @@ export default function Home() {
   const [spotifyLoading, setSpotifyLoading] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<SearchSpotifyTrack | null>(null);
 
   // Example songs array
   const exampleSongs = [
@@ -55,6 +58,57 @@ export default function Home() {
     }
 
     return '';
+  };
+
+  // Handle track selection from enhanced search
+  const handleTrackSelect = async (track: SearchSpotifyTrack) => {
+    setSelectedTrack(track);
+    const formattedQuery = `${track.artists[0]?.name} - ${track.name}`;
+    setSongQuery(formattedQuery);
+    
+    // Convert SearchSpotifyTrack to SpotifyTrack format for compatibility
+    const compatibleTrack: SpotifyTrack = {
+      id: track.id,
+      name: track.name,
+      artists: track.artists,
+      album: track.album,
+      preview_url: track.preview_url,
+      external_urls: track.external_urls
+    };
+    
+    setSpotifyTrack(compatibleTrack);
+    
+    // Automatically start analysis
+    await analyzeSongFromTrack(formattedQuery, compatibleTrack);
+  };
+
+  // Analyze song from selected track
+  const analyzeSongFromTrack = async (query: string, track: SpotifyTrack) => {
+    setValidationError('');
+    setIsLoading(true);
+    setResult(null);
+
+    try {
+      console.log('🎵 Analyzing selected song:', query);
+
+      // Use the secure client API helper
+      const analysisResult = await analyzeSong(query);
+
+      setResult(analysisResult);
+
+      // Update rate limit info if available
+      if (analysisResult.rateLimitInfo) {
+        setRateLimitInfo(analysisResult.rateLimitInfo);
+      }
+    } catch (error) {
+      console.error('❌ Analysis failed:', error);
+      setResult({
+        success: false,
+        error: 'Network error occurred while analyzing the song'
+      });
+    }
+
+    setIsLoading(false);
   };
 
   const testSongAnalysis = async () => {
@@ -259,35 +313,13 @@ export default function Home() {
             AI-powered song analysis that reveals themes, cultural context, and hidden meanings in your favorite tracks.
           </p>
 
-          {/* Google-style Search Bar */}
+          {/* Smart Search Interface */}
           <div className="max-w-2xl mx-auto mb-6 sm:mb-8">
-            <div className="relative">
-              <div className="bg-white border-2 sm:border-4 border-black rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all duration-200">
-                <div className="flex items-center px-4 sm:px-6 py-3 sm:py-4">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400 mr-3 sm:mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <input
-                    type="text"
-                    value={songQuery}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Enter artist and song title (e.g., The Beatles - Yesterday)"
-                    className={`flex-1 text-sm sm:text-lg text-black placeholder-gray-500 bg-transparent outline-none ${validationError ? 'text-red-600' : ''}`}
-                  />
-                  {songQuery && (
-                    <button
-                      onClick={() => setSongQuery('')}
-                      className="ml-2 text-gray-400 hover:text-gray-600"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
+            <SpotifySearchInput
+              onTrackSelect={handleTrackSelect}
+              placeholder="Search for any song... (e.g., Bohemian Rhapsody, Taylor Swift, Beatles)"
+              disabled={isLoading || (rateLimitInfo && rateLimitInfo.remaining === 0)}
+            />
 
             {/* Validation Error */}
             {validationError && (
@@ -298,30 +330,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-4 mt-6 sm:mt-8">
-              <button
-                onClick={testSongAnalysis}
-                disabled={isLoading || !songQuery.trim() || (rateLimitInfo && rateLimitInfo.remaining === 0)}
-                className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white font-bold px-6 sm:px-8 py-2.5 sm:py-3 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] sm:active:translate-x-[2px] active:translate-y-[1px] sm:active:translate-y-[2px] transition-all duration-150 disabled:hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:disabled:hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] disabled:active:translate-x-0 disabled:active:translate-y-0 min-w-[140px] max-w-[200px]"
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Analyzing...
-                  </span>
-                ) : (
-                  'Analyze Song'
-                )}
-              </button>
 
-              <button
-                onClick={tryNextExample}
-                className="bg-white hover:bg-gray-50 text-black font-bold px-6 py-2.5 sm:py-3 border-2 border-black rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] sm:active:translate-x-[2px] active:translate-y-[1px] sm:active:translate-y-[2px] transition-all duration-150 min-w-[120px] max-w-[180px]"
-              >
-                Try Example
-              </button>
-            </div>
 
 
 
