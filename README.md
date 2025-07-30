@@ -13,11 +13,13 @@
 - **🤖 AI-Powered Analysis**: Uses Gemini AI with grounding search for accurate, contextual song analysis
 - **🔗 Share Analysis**: Generate shareable links for song analyses with SEO-optimized pages
 - **💾 Smart Caching**: Database-backed analysis caching to reduce LLM calls and improve performance
-- **🎵 Spotify Integration**:
-  - Automatic track search and matching
-  - 30-second music previews while reading analysis
-  - Direct links to full tracks on Spotify
-  - Fallback support when previews aren't available
+- **🎵 Enhanced Spotify Integration**:
+  - **Smart Search**: Search naturally with any keywords (e.g., "Bohemian Rhapsody", "Taylor Swift")
+  - **Multiple Results**: Browse up to 15 search results with album art and metadata
+  - **Track Selection**: Click any track to automatically start analysis
+  - **30-second Previews**: Play music previews directly in search results
+  - **Auto-Analysis**: Selected tracks trigger immediate meaning analysis
+  - **Fallback Support**: Graceful handling when previews aren't available
 - **🎨 Neobrutalism Design**: Bold, modern interface inspired by contemporary design trends
 - **⚙️ Secure API**: Server-side API routes keep your API keys safe from client exposure
 - **⚡ Rate Limited**: 5 analysis per IP per day to prevent abuse
@@ -47,6 +49,16 @@ Visit the live application: [song2meaning.vercel.app](https://song2meaning.verce
 - Supabase account for database ([Create one here](https://supabase.com))
 
 ## 🆕 What's New
+
+### 🎵 Enhanced Spotify Search (Latest Update)
+- **Smart Search Interface**: Natural language search - no more "Artist - Song" format required
+- **Multiple Results Display**: Browse up to 15 tracks with rich metadata and album artwork
+- **Instant Previews**: Play 30-second previews directly from search results
+- **One-Click Analysis**: Select any track to automatically trigger meaning analysis
+- **Debounced Search**: Real-time search with 300ms debouncing for optimal performance
+- **Visual Track Cards**: Album art, artist info, duration, and popularity indicators
+- **Keyboard Navigation**: Full keyboard support with escape to close results
+- **Mobile Optimized**: Touch-friendly interface that works perfectly on all devices
 
 ### 🔗 Share Analysis Feature
 - **Shareable Links**: Every song analysis now generates a unique shareable URL
@@ -200,16 +212,33 @@ For production deployment, update your app settings:
 
 ## 🎯 Usage
 
-1. **Enter a song** in the format: `Artist - Song Title`
-2. **Click "Analyze Song"** or press Enter
-3. **Listen to a preview** (if available) while the analysis runs
-4. **View the comprehensive analysis** with detailed sections:
+### Enhanced Search Experience
+
+1. **Search naturally** - Type any song-related keywords:
+   - `"Bohemian Rhapsody"` 
+   - `"Taylor Swift Shake It Off"`
+   - `"Beatles Yesterday"`
+   - `"Nirvana Smells Like Teen Spirit"`
+
+2. **Browse results** - See up to 15 tracks with:
+   - Album artwork and metadata
+   - Artist names and album information
+   - Track duration and popularity scores
+   - Preview availability indicators (green dot)
+
+3. **Preview tracks** - Click the play button on album art to hear 30-second previews
+
+4. **Select your song** - Click any track card to automatically start analysis
+
+5. **View comprehensive analysis** with detailed sections:
    - 📖 **Overview**: Summary of the song's meaning and key themes
    - 🔍 **Deep Dive**: Detailed lyrical analysis and interpretation
    - 💭 **Cultural Context**: Historical and cultural background
-   - 🎵 **Spotify Integration**: Preview the track while reading the analysis
-5. **Share your analysis** using the share button to copy a permanent link
-6. **Enjoy instant results** for previously analyzed songs thanks to smart caching
+   - 🎵 **Spotify Player**: Continue listening while reading the analysis
+
+6. **Share your analysis** using the share button to copy a permanent link
+
+7. **Enjoy instant results** for previously analyzed songs thanks to smart caching
 
 ## 🔧 Troubleshooting
 
@@ -254,7 +283,8 @@ For production deployment, update your app settings:
 - `GET /api/stats` - Performance statistics (includes cache metrics)
 - `GET /api/rate-limit` - Rate limit status
 - `POST /api/validate` - Input validation
-- `GET /api/spotify/search` - Search for Spotify tracks
+- `GET /api/spotify/search` - Search for single Spotify track (legacy)
+- `GET /api/spotify/search-multiple` - **New**: Search for multiple Spotify tracks with metadata
 - `GET /api/spotify/preview` - Get track preview URLs
 
 ## 🛡️ Security Features
