@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: SharePageProps): Promise<Meta
         title: `${songTitle} by ${artist} - Song Analysis`,
         description: `Discover the meaning behind "${songTitle}" by ${artist}. Deep analysis of themes, cultural context, and lyrical interpretation.`,
         type: 'article',
-        url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/share/${shareId}`,
+        url: `${(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')}/share/${shareId}`,
       },
       twitter: {
         card: 'summary_large_image',
@@ -174,7 +174,7 @@ export default async function SharePage({ params }: SharePageProps) {
               {/* Share Button */}
               <div className="flex items-center gap-2">
                 <ShareButtons 
-                  shareUrl={`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/share/${shareId}`}
+                  shareUrl={`${(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000').replace(/\/$/, '')}/share/${shareId}`}
                   songTitle={songTitle}
                   artist={artist}
                 />
