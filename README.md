@@ -51,6 +51,7 @@ Visit the live application: [song2meaning.vercel.app](https://song2meaning.verce
 ## 🆕 What's New
 
 ### 🎵 Enhanced Spotify Search (Latest Update)
+
 - **Smart Search Interface**: Natural language search - no more "Artist - Song" format required
 - **Multiple Results Display**: Browse up to 15 tracks with rich metadata and album artwork
 - **Instant Previews**: Play 30-second previews directly from search results
@@ -61,6 +62,7 @@ Visit the live application: [song2meaning.vercel.app](https://song2meaning.verce
 - **Mobile Optimized**: Touch-friendly interface that works perfectly on all devices
 
 ### 🔗 Share Analysis Feature
+
 - **Shareable Links**: Every song analysis now generates a unique shareable URL
 - **SEO Optimized**: Share pages include proper metadata for social media previews
 - **Copy to Clipboard**: One-click sharing with automatic clipboard copying
@@ -68,6 +70,7 @@ Visit the live application: [song2meaning.vercel.app](https://song2meaning.verce
 - **Access Tracking**: Monitor how many times your shared analysis has been viewed
 
 ### 💾 Smart Caching System
+
 - **Database-Backed Caching**: All analyses are stored in Supabase to prevent duplicate LLM calls
 - **Intelligent Matching**: Normalized search keys ensure variations of the same song are matched
 - **Performance Boost**: Cached results load instantly, saving API costs and improving UX
@@ -208,14 +211,14 @@ For production deployment, update your app settings:
    - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
    - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key
-   - `NEXT_PUBLIC_BASE_URL`: Your production domain (e.g., https://yourdomain.vercel.app)
+   - `NEXT_PUBLIC_BASE_URL`: Your production domain (e.g., <https://yourdomain.vercel.app>)
 
 ## 🎯 Usage
 
 ### Enhanced Search Experience
 
 1. **Search naturally** - Type any song-related keywords:
-   - `"Bohemian Rhapsody"` 
+   - `"Bohemian Rhapsody"`
    - `"Taylor Swift Shake It Off"`
    - `"Beatles Yesterday"`
    - `"Nirvana Smells Like Teen Spirit"`

@@ -58,34 +58,20 @@ function validateRequest(request: SongAnalysisRequest): {
   sanitizedRequest?: SongAnalysisRequest | undefined;
 } {
   const { artist, songTitle } = request;
-  
   if (!artist || !songTitle) {
     return { isValid: false, error: 'Both artist and song title are required' };
   }
-
   // Check API key configuration
   const apiKeyCheck = APIKeyManager.checkConfiguration();
   if (!apiKeyCheck.isValid) {
     return { isValid: false, error: 'Service configuration error' };
   }
-
-  // Security check for artist
-  const artistCheck = performSecurityCheck(artist);
-  if (!artistCheck.allowed) {
-    return { isValid: false, error: artistCheck.errors.join('; ') };
-  }
-
-  // Security check for song title
-  const songCheck = performSecurityCheck(songTitle);
-  if (!songCheck.allowed) {
-    return { isValid: false, error: songCheck.errors.join('; ') };
-  }
-
+  // Accept any input for artist and song title (no security check)
   return { 
     isValid: true, 
     sanitizedRequest: {
-      artist: artistCheck.sanitized,
-      songTitle: songCheck.sanitized,
+      artist,
+      songTitle,
       fullQuery: request.fullQuery
     }
   };
