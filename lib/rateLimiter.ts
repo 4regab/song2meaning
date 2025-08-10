@@ -13,7 +13,6 @@ export interface RateLimitResult {
 export interface RateLimitConfig {
   maxRequests: number;
   windowMs: number;
-  skipSuccessfulRequests?: boolean;
 }
 
 /**
@@ -27,7 +26,6 @@ class IPRateLimiter {
   constructor(config: RateLimitConfig = {
     maxRequests: 5,
     windowMs: 24 * 60 * 60 * 1000, // 1 day
-    skipSuccessfulRequests: false
   }) {
     this.config = config;
     
@@ -36,7 +34,7 @@ class IPRateLimiter {
   }
 
   /**
-   * Check if IP address is allowed to make a request
+   * Check if IP address is allowed to make a request (read-only)
    */
   checkLimit(ip: string): RateLimitResult {
     const now = Date.now();
@@ -51,6 +49,7 @@ class IPRateLimiter {
         count: 0,
         resetTime: now + this.config.windowMs
       };
+      // Set it so getStatus can see it, but don't increment yet
       this.requests.set(key, requestData);
     }
     
@@ -64,9 +63,6 @@ class IPRateLimiter {
       };
     }
     
-    // Increment counter
-    requestData.count++;
-    
     return {
       allowed: true,
       remaining: this.config.maxRequests - requestData.count,
@@ -75,16 +71,23 @@ class IPRateLimiter {
   }
 
   /**
-   * Record a successful request (if configured to skip successful requests)
+   * Increment the request counter for an IP address.
+   * This should be called after a request has been processed.
    */
-  recordRequest(ip: string, success: boolean = true): void {
-    if (this.config.skipSuccessfulRequests && success) {
-      const key = this.normalizeIP(ip);
-      const requestData = this.requests.get(key);
-      if (requestData && requestData.count > 0) {
-        requestData.count--;
-      }
+  increment(ip: string): void {
+    const key = this.normalizeIP(ip);
+    let requestData = this.requests.get(key);
+
+    const now = Date.now();
+    if (!requestData || now >= requestData.resetTime) {
+      requestData = {
+        count: 0,
+        resetTime: now + this.config.windowMs
+      };
     }
+
+    requestData.count++;
+    this.requests.set(key, requestData);
   }
 
   /**
@@ -241,9 +244,9 @@ export function createRateLimitMiddleware(config?: Partial<RateLimitConfig>) {
       const ip = getClientIP(request);
       return rateLimiter.checkLimit(ip);
     },
-    record: (request: Request, success: boolean = true) => {
+    increment: (request: Request) => {
       const ip = getClientIP(request);
-      rateLimiter.recordRequest(ip, success);
+      rateLimiter.increment(ip);
     },
     getStatus: (request: Request) => {
       const ip = getClientIP(request);
@@ -259,7 +262,6 @@ export function createRateLimitMiddleware(config?: Partial<RateLimitConfig>) {
 export const songAnalysisRateLimit = createRateLimitMiddleware({
   maxRequests: 5,
   windowMs: 24 * 60 * 60 * 1000, // 1 day
-  skipSuccessfulRequests: false
 });
 
 // Types are already exported above
