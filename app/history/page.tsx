@@ -5,6 +5,8 @@
 import Link from 'next/link';
 import { fetchRecentSearchHistory } from '../../lib/searchHistory';
 
+export const dynamic = 'force-dynamic';
+
 export default async function HistoryPage() {
 	const { items, error } = await fetchRecentSearchHistory();
 
